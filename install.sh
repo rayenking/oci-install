@@ -86,7 +86,7 @@ ensure_gh_auth() {
   else
     warn "Not logged in to GitHub. Starting login..."
     echo ""
-    gh auth login </dev/tty
+    gh auth login
     echo ""
     gh auth status &>/dev/null || error "GitHub auth failed"
     info "GitHub CLI authenticated"
@@ -131,7 +131,7 @@ show_menu() {
     echo "  3) Uninstall  — remove everything"
     echo "  4) Cancel"
     echo ""
-    read -rp "Choose [1-4]: " choice </dev/tty
+    read -rp "Choose [1-4]: " choice
     case "$choice" in
       1) OCI_ACTION="reinstall" ;;
       2) OCI_ACTION="update" ;;
@@ -180,6 +180,10 @@ run_action() {
 }
 
 main() {
+  if [ ! -t 0 ]; then
+    exec </dev/tty
+  fi
+
   banner
   detect_platform
   info "Platform: ${OS}/${ARCH}"
