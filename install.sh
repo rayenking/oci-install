@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+{
+
 REPO="rayenking/oci"
 BINARY_NAME="oci"
 INSTALL_DIR="/usr/local/bin"
@@ -86,7 +88,7 @@ ensure_gh_auth() {
   else
     warn "Not logged in to GitHub. Starting login..."
     echo ""
-    gh auth login
+    gh auth login </dev/tty
     echo ""
     gh auth status &>/dev/null || error "GitHub auth failed"
     info "GitHub CLI authenticated"
@@ -94,20 +96,20 @@ ensure_gh_auth() {
 }
 
 download_oci() {
-  TMPDIR="$(mktemp -d)"
-  trap 'rm -rf "$TMPDIR"' EXIT
+  OCI_TMPDIR="$(mktemp -d)"
+  trap 'rm -rf "$OCI_TMPDIR"' EXIT
 
   info "Downloading OCI binary (${ASSET_NAME})..."
-  gh release download --repo "$REPO" --pattern "$ASSET_NAME" --dir "$TMPDIR" --clobber 2>/dev/null \
+  gh release download --repo "$REPO" --pattern "$ASSET_NAME" --dir "$OCI_TMPDIR" --clobber 2>/dev/null \
     || error "Failed to download. Make sure you have access to ${REPO}"
 
-  chmod +x "${TMPDIR}/${ASSET_NAME}"
+  chmod +x "${OCI_TMPDIR}/${ASSET_NAME}"
 
   if [ -w "$INSTALL_DIR" ]; then
-    mv "${TMPDIR}/${ASSET_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
+    mv "${OCI_TMPDIR}/${ASSET_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
   else
     info "Need sudo to install to ${INSTALL_DIR}..."
-    sudo mv "${TMPDIR}/${ASSET_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
+    sudo mv "${OCI_TMPDIR}/${ASSET_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
   fi
 
   info "OCI installed to ${INSTALL_DIR}/${BINARY_NAME}"
@@ -131,7 +133,7 @@ show_menu() {
     echo "  3) Uninstall  — remove everything"
     echo "  4) Cancel"
     echo ""
-    read -rp "Choose [1-4]: " choice
+    read -rp "Choose [1-4]: " choice </dev/tty
     case "$choice" in
       1) OCI_ACTION="reinstall" ;;
       2) OCI_ACTION="update" ;;
@@ -161,13 +163,8 @@ run_action() {
       "${INSTALL_DIR}/${BINARY_NAME}" reinstall
       ;;
     update)
-      if command -v oci &>/dev/null; then
-        download_oci
-        info "OCI binary updated."
-      else
-        download_oci
-        info "OCI installed."
-      fi
+      download_oci
+      info "OCI binary updated."
       ;;
     uninstall)
       if command -v oci &>/dev/null; then
@@ -179,22 +176,16 @@ run_action() {
   esac
 }
 
-main() {
-  if [ ! -t 0 ]; then
-    exec </dev/tty
-  fi
+banner
+detect_platform
+info "Platform: ${OS}/${ARCH}"
+echo ""
 
-  banner
-  detect_platform
-  info "Platform: ${OS}/${ARCH}"
-  echo ""
+ensure_gh
+ensure_gh_auth
+echo ""
 
-  ensure_gh
-  ensure_gh_auth
-  echo ""
+show_menu "${1:-}"
+run_action
 
-  show_menu "${1:-}"
-  run_action
 }
-
-main "$@"
