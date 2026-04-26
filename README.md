@@ -8,18 +8,32 @@ One-liner installer for [OCI](https://github.com/rayenking/oci) (OpenCode Iris).
 curl -fsSL https://raw.githubusercontent.com/rayenking/oci-install/main/install.sh | bash
 ```
 
-## What Happens
+If OCI is already installed, the script shows a menu:
 
-1. Installs `gh` (GitHub CLI) if not present
-2. Prompts `gh auth login` if not authenticated
-3. Downloads the latest OCI binary from the private release
-4. Runs `oci install` which sets up everything:
-   - OpenCode CLI
-   - All config files (opencode.json, oh-my-openagent.json, dcp.jsonc)
-   - RTK (Rust Token Killer)
-   - GitHub CLI
-   - 19 development skills
-   - Claude Code configs
+```
+OCI is already installed. (oci v0.2.0 darwin/arm64)
+
+  1) Reinstall  — backup sessions, fresh install
+  2) Update     — update OCI binary to latest
+  3) Uninstall  — remove everything
+  4) Cancel
+```
+
+## What Gets Installed
+
+1. `gh` (GitHub CLI) if not present
+2. OCI binary to `/usr/local/bin/oci`
+3. OpenCode CLI, configs, RTK, skills, plugins, Claude configs
+
+## Commands
+
+```bash
+oci install     # Fresh install (default)
+oci reinstall   # Backup sessions → clean → reinstall
+oci uninstall   # Remove everything (asks about sessions)
+oci update      # Self-update OCI binary
+oci version     # Print version
+```
 
 ## Requirements
 
@@ -27,11 +41,3 @@ curl -fsSL https://raw.githubusercontent.com/rayenking/oci-install/main/install.
 - `curl`
 - Internet connection
 - GitHub account with access to `rayenking/oci`
-
-## Update
-
-After initial install, update with:
-
-```bash
-oci update
-```

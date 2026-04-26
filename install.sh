@@ -9,6 +9,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
+BOLD='\033[1m'
 NC='\033[0m'
 
 banner() {
@@ -112,11 +113,70 @@ download_oci() {
   info "OCI installed to ${INSTALL_DIR}/${BINARY_NAME}"
 }
 
-run_oci() {
-  echo ""
-  info "Running OCI installer..."
-  echo ""
-  "${INSTALL_DIR}/${BINARY_NAME}" install
+show_menu() {
+  local action="${1:-}"
+
+  if [ -n "$action" ]; then
+    case "$action" in
+      install|reinstall|update|uninstall) OCI_ACTION="$action"; return ;;
+      *) error "Unknown action: $action. Use: install, reinstall, update, uninstall" ;;
+    esac
+  fi
+
+  if command -v oci &>/dev/null; then
+    echo -e "${BOLD}OCI is already installed.${NC} ($(oci version))"
+    echo ""
+    echo "  1) Reinstall  — backup sessions, fresh install"
+    echo "  2) Update     — update OCI binary to latest"
+    echo "  3) Uninstall  — remove everything"
+    echo "  4) Cancel"
+    echo ""
+    read -rp "Choose [1-4]: " choice
+    case "$choice" in
+      1) OCI_ACTION="reinstall" ;;
+      2) OCI_ACTION="update" ;;
+      3) OCI_ACTION="uninstall" ;;
+      4) echo "Cancelled."; exit 0 ;;
+      *) error "Invalid choice" ;;
+    esac
+  else
+    OCI_ACTION="install"
+  fi
+}
+
+run_action() {
+  case "$OCI_ACTION" in
+    install)
+      download_oci
+      echo ""
+      info "Running OCI installer..."
+      echo ""
+      "${INSTALL_DIR}/${BINARY_NAME}" install
+      ;;
+    reinstall)
+      download_oci
+      echo ""
+      info "Running OCI reinstall..."
+      echo ""
+      "${INSTALL_DIR}/${BINARY_NAME}" reinstall
+      ;;
+    update)
+      if command -v oci &>/dev/null; then
+        download_oci
+        info "OCI binary updated."
+      else
+        download_oci
+        info "OCI installed."
+      fi
+      ;;
+    uninstall)
+      if command -v oci &>/dev/null; then
+        oci uninstall
+      else
+        error "OCI is not installed"
+      fi
+      ;;
+  esac
 }
 
 main() {
@@ -129,8 +189,8 @@ main() {
   ensure_gh_auth
   echo ""
 
-  download_oci
-  run_oci
+  show_menu "${1:-}"
+  run_action
 }
 
 main "$@"
